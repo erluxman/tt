@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Ignore helper scripts
+    "create-pr.*",
+    "quick-pr.*",
+    "*.config.js",
   ]),
 ]);
 

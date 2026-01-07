@@ -18,7 +18,8 @@ export class InMemoryTodoRepository implements ITodoRepository {
     return this.todos
       .filter((todo) => todo.userId === userId)
       .map((todo) => {
-        const { userId: _, ...todoWithoutUserId } = todo;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { userId: _userId, ...todoWithoutUserId } = todo;
         return todoWithoutUserId;
       });
   }
@@ -26,7 +27,8 @@ export class InMemoryTodoRepository implements ITodoRepository {
   async findById(id: string, userId: string): Promise<Todo | null> {
     const todo = this.todos.find((t) => t.id === id && t.userId === userId);
     if (!todo) return null;
-    const { userId: _, ...todoWithoutUserId } = todo;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { userId: _userId, ...todoWithoutUserId } = todo;
     return todoWithoutUserId;
   }
 
@@ -39,7 +41,8 @@ export class InMemoryTodoRepository implements ITodoRepository {
       userId,
     };
     this.todos.push(newTodo);
-    const { userId: _, ...todoWithoutUserId } = newTodo;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { userId: _userId, ...todoWithoutUserId } = newTodo;
     return todoWithoutUserId;
   }
 
@@ -54,7 +57,8 @@ export class InMemoryTodoRepository implements ITodoRepository {
       ...updates,
     };
 
-    const { userId: _, ...todoWithoutUserId } = this.todos[index];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { userId: _userId, ...todoWithoutUserId } = this.todos[index];
     return todoWithoutUserId;
   }
 
