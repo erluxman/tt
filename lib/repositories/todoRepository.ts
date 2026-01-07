@@ -83,10 +83,18 @@ let repositoryInstance: ITodoRepository | null = null;
 export function getTodoRepository(): ITodoRepository {
   if (!repositoryInstance) {
     // Use MongoDB repository if MONGODB_URI is set, otherwise use in-memory
-    if (process.env.MONGODB_URI) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { MongoTodoRepository } = require('./mongoTodoRepository');
-      repositoryInstance = new MongoTodoRepository();
+    // Check at runtime to avoid build-time errors
+    const mongoUri = process.env.MONGODB_URI;
+    if (mongoUri) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { MongoTodoRepository } = require('./mongoTodoRepository');
+        repositoryInstance = new MongoTodoRepository();
+      } catch (error) {
+        // Fallback to in-memory if MongoDB module fails to load
+        console.warn('MongoDB repository failed to load, using in-memory:', error);
+        repositoryInstance = new InMemoryTodoRepository();
+      }
     } else {
       repositoryInstance = new InMemoryTodoRepository();
     }
