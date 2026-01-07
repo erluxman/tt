@@ -1,40 +1,50 @@
 import type { Todo } from '../types/todo';
 
 export interface ITodoRepository {
-  findAll(): Promise<Todo[]>;
-  findById(id: string): Promise<Todo | null>;
-  create(todo: Omit<Todo, 'id' | 'createdAt'>): Promise<Todo>;
-  update(id: string, updates: Partial<Omit<Todo, 'id' | 'createdAt'>>): Promise<Todo>;
-  delete(id: string): Promise<void>;
+  findAll(userId: string): Promise<Todo[]>;
+  findById(id: string, userId: string): Promise<Todo | null>;
+  create(todo: Omit<Todo, 'id' | 'createdAt'>, userId: string): Promise<Todo>;
+  update(id: string, updates: Partial<Omit<Todo, 'id' | 'createdAt'>>, userId: string): Promise<Todo>;
+  delete(id: string, userId: string): Promise<void>;
 }
 
 // In-memory implementation (can be swapped with database implementation)
+// Note: This is kept for testing purposes. In production, use MongoTodoRepository
 export class InMemoryTodoRepository implements ITodoRepository {
-  private todos: Todo[] = [];
+  private todos: Array<Todo & { userId: string }> = [];
   private idCounter = 0;
 
-  async findAll(): Promise<Todo[]> {
-    return this.todos.map((todo) => ({ ...todo }));
+  async findAll(userId: string): Promise<Todo[]> {
+    return this.todos
+      .filter((todo) => todo.userId === userId)
+      .map((todo) => {
+        const { userId: _, ...todoWithoutUserId } = todo;
+        return todoWithoutUserId;
+      });
   }
 
-  async findById(id: string): Promise<Todo | null> {
-    const todo = this.todos.find((t) => t.id === id);
-    return todo ? { ...todo } : null;
+  async findById(id: string, userId: string): Promise<Todo | null> {
+    const todo = this.todos.find((t) => t.id === id && t.userId === userId);
+    if (!todo) return null;
+    const { userId: _, ...todoWithoutUserId } = todo;
+    return todoWithoutUserId;
   }
 
-  async create(todo: Omit<Todo, 'id' | 'createdAt'>): Promise<Todo> {
+  async create(todo: Omit<Todo, 'id' | 'createdAt'>, userId: string): Promise<Todo> {
     this.idCounter += 1;
-    const newTodo: Todo = {
+    const newTodo: Todo & { userId: string } = {
       ...todo,
       id: `${Date.now()}-${this.idCounter}`,
       createdAt: new Date().toISOString(),
+      userId,
     };
     this.todos.push(newTodo);
-    return { ...newTodo };
+    const { userId: _, ...todoWithoutUserId } = newTodo;
+    return todoWithoutUserId;
   }
 
-  async update(id: string, updates: Partial<Omit<Todo, 'id' | 'createdAt'>>): Promise<Todo> {
-    const index = this.todos.findIndex((t) => t.id === id);
+  async update(id: string, updates: Partial<Omit<Todo, 'id' | 'createdAt'>>, userId: string): Promise<Todo> {
+    const index = this.todos.findIndex((t) => t.id === id && t.userId === userId);
     if (index === -1) {
       throw new Error('Todo not found');
     }
@@ -44,11 +54,12 @@ export class InMemoryTodoRepository implements ITodoRepository {
       ...updates,
     };
 
-    return { ...this.todos[index] };
+    const { userId: _, ...todoWithoutUserId } = this.todos[index];
+    return todoWithoutUserId;
   }
 
-  async delete(id: string): Promise<void> {
-    const index = this.todos.findIndex((t) => t.id === id);
+  async delete(id: string, userId: string): Promise<void> {
+    const index = this.todos.findIndex((t) => t.id === id && t.userId === userId);
     if (index === -1) {
       throw new Error('Todo not found');
     }
@@ -67,9 +78,16 @@ let repositoryInstance: ITodoRepository | null = null;
 
 export function getTodoRepository(): ITodoRepository {
   if (!repositoryInstance) {
-    repositoryInstance = new InMemoryTodoRepository();
+    // Use MongoDB repository if MONGODB_URI is set, otherwise use in-memory
+    if (process.env.MONGODB_URI) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { MongoTodoRepository } = require('./mongoTodoRepository');
+      repositoryInstance = new MongoTodoRepository();
+    } else {
+      repositoryInstance = new InMemoryTodoRepository();
+    }
   }
-  return repositoryInstance;
+  return repositoryInstance as ITodoRepository;
 }
 
 // Export for testing - allows resetting the repository

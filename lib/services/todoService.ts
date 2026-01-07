@@ -4,18 +4,18 @@ import type { ITodoRepository } from '../repositories/todoRepository';
 export class TodoService {
   constructor(private repository: ITodoRepository) {}
 
-  async getAllTodos(): Promise<Todo[]> {
-    return this.repository.findAll();
+  async getAllTodos(userId: string): Promise<Todo[]> {
+    return this.repository.findAll(userId);
   }
 
-  async getTodoById(id: string): Promise<Todo | null> {
+  async getTodoById(id: string, userId: string): Promise<Todo | null> {
     if (!id || typeof id !== 'string') {
       throw new Error('Invalid todo ID');
     }
-    return this.repository.findById(id);
+    return this.repository.findById(id, userId);
   }
 
-  async createTodo(input: CreateTodoInput): Promise<Todo> {
+  async createTodo(input: CreateTodoInput, userId: string): Promise<Todo> {
     if (!input.text || typeof input.text !== 'string' || input.text.trim() === '') {
       throw new Error('Todo text is required and must be a non-empty string');
     }
@@ -23,15 +23,15 @@ export class TodoService {
     return this.repository.create({
       text: input.text.trim(),
       completed: false,
-    });
+    }, userId);
   }
 
-  async updateTodo(input: UpdateTodoInput): Promise<Todo> {
+  async updateTodo(input: UpdateTodoInput, userId: string): Promise<Todo> {
     if (!input.id || typeof input.id !== 'string') {
       throw new Error('Todo ID is required');
     }
 
-    const existingTodo = await this.repository.findById(input.id);
+    const existingTodo = await this.repository.findById(input.id, userId);
     if (!existingTodo) {
       throw new Error('Todo not found');
     }
@@ -49,20 +49,20 @@ export class TodoService {
       updates.completed = Boolean(input.completed);
     }
 
-    return this.repository.update(input.id, updates);
+    return this.repository.update(input.id, updates, userId);
   }
 
-  async deleteTodo(id: string): Promise<void> {
+  async deleteTodo(id: string, userId: string): Promise<void> {
     if (!id || typeof id !== 'string') {
       throw new Error('Todo ID is required');
     }
 
-    const existingTodo = await this.repository.findById(id);
+    const existingTodo = await this.repository.findById(id, userId);
     if (!existingTodo) {
       throw new Error('Todo not found');
     }
 
-    await this.repository.delete(id);
+    await this.repository.delete(id, userId);
   }
 }
 
