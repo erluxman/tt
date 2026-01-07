@@ -13,9 +13,11 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     // Ignore helper scripts
-    "create-pr.*",
-    "quick-pr.*",
+    "create-pr*.js",
+    "create-pr*.sh",
+    "quick-pr*.sh",
     "*.config.js",
+    "*.config.mjs",
   ]),
 ]);
 
