@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Todo, CreateTodoInput, UpdateTodoInput } from '../lib/types/todo';
+import { useAuth } from './useAuth';
 
 interface UseTodosReturn {
   todos: Todo[];
@@ -17,13 +18,31 @@ export function useTodos(): UseTodosReturn {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { token } = useAuth();
+
+  const getAuthHeaders = useCallback(() => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }, [token]);
 
   const fetchTodos = useCallback(async () => {
+    if (!token) return;
+    
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/todos');
+      const response = await fetch('/api/todos', {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required');
+        }
         throw new Error('Failed to fetch todos');
       }
       const data = await response.json();
@@ -35,17 +54,17 @@ export function useTodos(): UseTodosReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, getAuthHeaders]);
 
   const createTodo = useCallback(async (input: CreateTodoInput) => {
+    if (!token) throw new Error('Authentication required');
+    
     try {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/todos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(input),
       });
 
@@ -64,17 +83,17 @@ export function useTodos(): UseTodosReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, getAuthHeaders]);
 
   const updateTodo = useCallback(async (input: UpdateTodoInput) => {
+    if (!token) throw new Error('Authentication required');
+    
     try {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/todos', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(input),
       });
 
@@ -93,14 +112,17 @@ export function useTodos(): UseTodosReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, getAuthHeaders]);
 
   const deleteTodo = useCallback(async (id: string) => {
+    if (!token) throw new Error('Authentication required');
+    
     try {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/todos?id=${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -117,11 +139,15 @@ export function useTodos(): UseTodosReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, getAuthHeaders]);
 
   useEffect(() => {
-    fetchTodos();
-  }, [fetchTodos]);
+    if (token) {
+      fetchTodos();
+    } else {
+      setTodos([]);
+    }
+  }, [token, fetchTodos]);
 
   return {
     todos,
