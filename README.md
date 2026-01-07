@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Todo Application - Next.js
+
+A full-stack todo application built with Next.js, featuring complete CRUD (Create, Read, Update, Delete) operations.
+
+## Features
+
+- ✅ Create new todos
+- ✅ View all todos
+- ✅ Update todo text
+- ✅ Toggle todo completion status
+- ✅ Delete todos
+- 🎨 Modern, responsive UI with Tailwind CSS
+
+## Tech Stack
+
+- **Framework**: Next.js 16.1.1
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **API**: Next.js API Routes
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ installed
+- npm or yarn package manager
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone git@github.com:erluxman/tt.git
+cd newnextjs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Learn More
+## API Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+The application includes the following API routes:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `GET /api/todos` - Fetch all todos
+- `POST /api/todos` - Create a new todo
+- `PUT /api/todos` - Update a todo (text or completion status)
+- `DELETE /api/todos?id={id}` - Delete a todo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+### Option 1: Deploy to Vercel (Recommended - Easiest)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Go to [vercel.com](https://vercel.com) and sign in with your GitHub account
+2. Click "Add New Project"
+3. Import the repository: `erluxman/tt`
+4. Vercel will automatically detect Next.js and configure the project
+5. Click "Deploy"
+6. Your app will be live in minutes!
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Option 2: Deploy using Vercel CLI
+
+1. Install Vercel CLI (if not already installed):
+```bash
+npm i -g vercel
+```
+
+2. Login to Vercel:
+```bash
+vercel login
+```
+
+3. Deploy:
+```bash
+vercel --prod
+```
+
+## Project Structure
+
+```
+newnextjs/
+├── app/
+│   ├── api/
+│   │   └── todos/
+│   │       └── route.ts      # API routes for todos
+│   ├── layout.tsx            # Root layout
+│   ├── page.tsx              # Main todo application page
+│   └── globals.css           # Global styles
+├── public/                   # Static assets
+└── package.json             # Dependencies
+
+```
+
+## Notes
+
+- The current implementation uses in-memory storage for todos (data resets on server restart)
+- For production use, consider integrating a database (PostgreSQL, MongoDB, etc.)
+
+## License
+
+MIT
