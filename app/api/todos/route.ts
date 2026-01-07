@@ -1,37 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { TodoService } from '../../../lib/services/todoService';
+import { getTodoRepository } from '../../../lib/repositories/todoRepository';
 
-// In-memory storage (in production, use a database)
-let todos: Array<{ id: string; text: string; completed: boolean; createdAt: string }> = [];
+// Initialize service with repository
+const todoService = new TodoService(getTodoRepository());
 
 export async function GET() {
-  return NextResponse.json({ todos });
+  try {
+    const todos = await todoService.getAllTodos();
+    return NextResponse.json({ todos });
+  } catch (error) {
+    console.error('Error fetching todos:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch todos' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text } = body;
-
-    if (!text || typeof text !== 'string' || text.trim() === '') {
-      return NextResponse.json(
-        { error: 'Todo text is required' },
-        { status: 400 }
-      );
-    }
-
-    const newTodo = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    todos.push(newTodo);
-    return NextResponse.json({ todo: newTodo }, { status: 201 });
+    const todo = await todoService.createTodo({ text: body.text });
+    return NextResponse.json({ todo }, { status: 201 });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Invalid request body';
+    const status = errorMessage.includes('required') ? 400 : 400;
     return NextResponse.json(
-      { error: 'Invalid request body' },
-      { status: 400 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
@@ -40,41 +37,14 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { id, text, completed } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Todo ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const todoIndex = todos.findIndex((todo) => todo.id === id);
-    if (todoIndex === -1) {
-      return NextResponse.json(
-        { error: 'Todo not found' },
-        { status: 404 }
-      );
-    }
-
-    if (text !== undefined) {
-      if (typeof text !== 'string' || text.trim() === '') {
-        return NextResponse.json(
-          { error: 'Todo text must be a non-empty string' },
-          { status: 400 }
-        );
-      }
-      todos[todoIndex].text = text.trim();
-    }
-
-    if (completed !== undefined) {
-      todos[todoIndex].completed = Boolean(completed);
-    }
-
-    return NextResponse.json({ todo: todos[todoIndex] });
+    const todo = await todoService.updateTodo({ id, text, completed });
+    return NextResponse.json({ todo });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Invalid request body';
+    const status = errorMessage.includes('not found') ? 404 : 400;
     return NextResponse.json(
-      { error: 'Invalid request body' },
-      { status: 400 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
@@ -91,21 +61,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const todoIndex = todos.findIndex((todo) => todo.id === id);
-    if (todoIndex === -1) {
-      return NextResponse.json(
-        { error: 'Todo not found' },
-        { status: 404 }
-      );
-    }
-
-    todos.splice(todoIndex, 1);
+    await todoService.deleteTodo(id);
     return NextResponse.json({ message: 'Todo deleted successfully' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Invalid request';
+    const status = errorMessage.includes('not found') ? 404 : 400;
     return NextResponse.json(
-      { error: 'Invalid request' },
-      { status: 400 }
+      { error: errorMessage },
+      { status }
     );
   }
 }
-

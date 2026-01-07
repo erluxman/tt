@@ -1,117 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-interface Todo {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: string;
-}
+import { useTodos } from '../hooks/useTodos';
+import TodoForm from '../components/TodoForm';
+import TodoList from '../components/TodoList';
 
 export default function Home() {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodo, setNewTodo] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { todos, loading, createTodo, updateTodo, deleteTodo } = useTodos();
 
-  // Fetch todos on component mount
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  const fetchTodos = async () => {
-    try {
-      const response = await fetch('/api/todos');
-      const data = await response.json();
-      setTodos(data.todos || []);
-    } catch (error) {
-      console.error('Error fetching todos:', error);
-    }
+  const handleCreateTodo = async (text: string) => {
+    await createTodo({ text });
   };
 
-  const createTodo = async () => {
-    if (!newTodo.trim()) return;
-
-    setLoading(true);
-    try {
-      const response = await fetch('/api/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: newTodo }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTodos([...todos, data.todo]);
-        setNewTodo('');
-      }
-    } catch (error) {
-      console.error('Error creating todo:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleToggleComplete = async (id: string, completed: boolean) => {
+    await updateTodo({ id, completed: !completed });
   };
 
-  const updateTodo = async (id: string, updates: { text?: string; completed?: boolean }) => {
-    try {
-      const response = await fetch('/api/todos', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id, ...updates }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTodos(todos.map((todo) => (todo.id === id ? data.todo : todo)));
-        setEditingId(null);
-        setEditText('');
-      }
-    } catch (error) {
-      console.error('Error updating todo:', error);
-    }
+  const handleUpdateText = async (id: string, text: string) => {
+    await updateTodo({ id, text });
   };
 
-  const deleteTodo = async (id: string) => {
-    try {
-      const response = await fetch(`/api/todos?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setTodos(todos.filter((todo) => todo.id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting todo:', error);
-    }
-  };
-
-  const toggleComplete = (id: string, completed: boolean) => {
-    updateTodo(id, { completed: !completed });
-  };
-
-  const startEditing = (todo: Todo) => {
-    setEditingId(todo.id);
-    setEditText(todo.text);
-  };
-
-  const saveEdit = (id: string) => {
-    if (editText.trim()) {
-      updateTodo(id, { text: editText });
-    } else {
-      setEditingId(null);
-      setEditText('');
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditText('');
+  const handleDelete = async (id: string) => {
+    await deleteTodo(id);
   };
 
   return (
@@ -122,101 +31,14 @@ export default function Home() {
             Todo Application
           </h1>
 
-          {/* Create Todo Form */}
-          <div className="mb-8">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && createTodo()}
-                placeholder="Add a new todo..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              <button
-                onClick={createTodo}
-                disabled={loading || !newTodo.trim()}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold"
-              >
-                {loading ? 'Adding...' : 'Add'}
-              </button>
-            </div>
-          </div>
+          <TodoForm onSubmit={handleCreateTodo} loading={loading} />
 
-          {/* Todos List */}
-          <div className="space-y-3">
-            {todos.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
-                No todos yet. Create your first todo above!
-              </p>
-            ) : (
-              todos.map((todo) => (
-                <div
-                  key={todo.id}
-                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-                >
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => toggleComplete(todo.id, todo.completed)}
-                    className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
-                  />
-
-                  {editingId === todo.id ? (
-                    <div className="flex-1 flex gap-2">
-                      <input
-                        type="text"
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') saveEdit(todo.id);
-                          if (e.key === 'Escape') cancelEdit();
-                        }}
-                        className="flex-1 px-3 py-2 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => saveEdit(todo.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <span
-                        className={`flex-1 ${
-                          todo.completed
-                            ? 'line-through text-gray-500'
-                            : 'text-gray-800'
-                        }`}
-                      >
-                        {todo.text}
-                      </span>
-                      <button
-                        onClick={() => startEditing(todo)}
-                        className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteTodo(todo.id)}
-                        className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+          <TodoList
+            todos={todos}
+            onToggle={handleToggleComplete}
+            onUpdate={handleUpdateText}
+            onDelete={handleDelete}
+          />
         </div>
       </div>
     </div>
